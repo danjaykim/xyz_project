@@ -1,0 +1,87 @@
+FROM python:3.10-bullseye
+RUN python -m pip install --upgrade pip
+ADD https://github.com/ufoscout/docker-compose-wait/releases/download/2.9.0/wait /wait
+RUN chmod +x /wait
+WORKDIR /deps
+COPY requirements.txt requirements.txt
+RUN python -m pip install -r requirements.txt
+WORKDIR /app
+
+# If you're using a relational database and want migrations
+# to be run automatically, use this below:
+
+CMD /wait && python -m migrations up && uvicorn main:app --reload --host 0.0.0.0
+
+
+# BASE IMAGE:
+# 1. FROM python:3.10-bullseye
+
+# Explanation: This line specifies the base image for the Docker container.
+# It's using an official Python 3.10 image based on the Debian "Bullseye" distrbution.
+# This ensures that your container will have Python 3.10 and a Linux environment to work with
+
+
+# Upgrade PIP
+# 2. RUN python -m pip install --upgrade pip
+
+# Explanation: THis command updates the version of 'pip' (Python's package installer) to the latest version.
+# This ensures that the container uses the most recent and stable version of 'pip' for installing Python pckages
+
+
+# Add the WAIT tool
+# 3. ADD https://github.com/ufoscout/docker-compose-wait/releases/download/2.9.0/wait /wait
+
+# Explanation: This command downloads the 'wait' tool from Github and saves it as /wait in the container.
+# This is commonly used in Docker Compose setups to wait for other services (like databases) to be ready before starting your application
+
+
+# Make the WAIT tool executable
+# 4. RUN chmod +x / wait
+
+# Explanation: This command grants execution permission (+x) to the 'wait' tool that was just downloaded.
+# Now the tool can be run as an executable
+
+
+# Set the working directory for dependencies (this directory is specifically used for installing Python dependencies)
+# 5. WORKDIR /deps
+
+# Explanation: This sets the working directory IN THE CONTAINER to '/deps'. All subsequent
+# commands related to files and operations will occur within this directory unless other specified.
+
+
+# Copy requirements.txt to the container
+# 6. COPY requirements.txt requirements.txt
+
+# Explanation: This copies the requirements.txt file from your local machine (where you build the Docker image)
+# to the '/deps' directory inside the container. This file contains a list of Python packages that your application depends on.
+
+
+# Install Python dependencies
+# 7. RUN python -m pip install -r requirements.txt
+
+# Explanation: This command installs all the Python packages listed in the requirements.txt file using 'pip'.
+# These packages will be installed IN THE CONTAINER
+
+
+# Set the working directory for the actual application (this is where your FastAPI application will reside and run)
+# 8. WORKDIR /app
+
+# Explanation: After installing the dependencies, the working directory is switched to '/app'.
+# This is where the main application code will reside.
+
+
+
+
+# 9. CMD /wait && python -m migrations up && uvicorn main:app --reload --host 0.0.0.0
+
+# Explanation: 
+    # CMD is the command that gets executed when the container starts.
+    # /wait: This runs the wait tool to ensure that any dependent services (like a database) are ready before proceeding.
+    # python -m migrations up: This runs any database migrations using a migration tool (e.g., Alembic). It ensures that your database schema is up-to-date before the app starts.
+    # uvicorn main:app --reload --host 0.0.0.0: This command starts the FastAPI application using the Uvicorn server,
+        # with the app located in main.py under the app object.
+        # The --reload flag ensures that the server automatically reloads when code changes are made (useful in development).
+        # The --host 0.0.0.0 flag allows the app to be accessible from outside the container.
+
+
+# The && ensures that each command runs only if the previous one finishes successfully. If any of the commands fail, the subsequent ones will not execute.
